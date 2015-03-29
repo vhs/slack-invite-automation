@@ -25,7 +25,7 @@ router.post('/invite', function(req, res) {
         body = JSON.parse(body);
         if (body.ok) {
           if (req.body.return){
-            res.redirect(req.query.return + "?res=success");
+            res.redirect(req.body.return + "?res=success");
           } else {
             res.send('Success! Check "'+ req.body.email +'" for an invite from Slack.');
           }

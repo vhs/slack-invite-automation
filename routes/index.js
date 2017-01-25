@@ -4,7 +4,7 @@ var request = require('request');
 var config = require('../config');
 
 router.use( '/', function( req, res, next ) {
-	if( req.connection.remoteAddress != config.nomosIP ) {
+	if( ( req.headers['x-forwarded-for'] != config.nomosIP ) && ( req.connection.remoteAddress != config.nomosIP ) ) {
 		console.log( "Invalid connection from: " + req.connection.remoteAddress );
 		res.status(401).send('Direct access not allowed. Please register through https://membership.vanhack.ca/ or ask an admin.' );
 	}

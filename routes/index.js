@@ -3,6 +3,14 @@ var router = express.Router();
 var request = require('request');
 var config = require('../config');
 
+router.use( '/', function( req, res, next ) {
+	if( req.connection.remoteAddress != config.nomosIP ) {
+		console.log( "Invalid connection from: " + req.connection.remoteAddress );
+		res.status(401).send('Direct access not allowed. Please register through https://membership.vanhack.ca/ or ask an admin.' );
+	}
+	next();
+});
+
 router.get('/', function(req, res) {
   res.render('index', { community: config.community });
 });

@@ -43,6 +43,10 @@ async function recaptchaIfNeeded(response) {
   }
 }
 
+const ErrorMap = {
+  "invalid_email": "The email you entered is an invalid email.",
+  "invalid_auth": 'Something has gone wrong. Please contact a system administrator.'
+}
 
 async function triggerInvite(email) {
   let url = 'https://'+ config.slackUrl + '/api/users.admin.invite'
@@ -70,20 +74,17 @@ async function triggerInvite(email) {
   let error = resultBody.error;
 
   if (error === 'already_invited' || error === 'already_in_team') {
-    return 'Success! You were already invited.<br>' +
-              'Visit <a href="https://'+ config.slackUrl +'">'+ config.community +'</a>';
-  } else if (error === 'invalid_email') {
-    error = 'The email you entered is an invalid email.';
-  } else if (error === 'invalid_auth') {
-    error = 'Something has gone wrong. Please contact a system administrator.';
+    return `Success! You were already invited.<br>\nVisit <a href="https://${config.slackUrl}">${config.community}</a>`;
   }
-
+  
+  // look up the error, for a tidy message if possible
+  error = ErrorMap[error] || error;
   throw new Error(error);
 }
 
-
 router.post('/invite', async function(req, res) {
   try {
+    // check for missing data
     const errMsg = [];
     if (!req.body.email) {
       errMsg.push('your email is required');
@@ -103,16 +104,20 @@ router.post('/invite', async function(req, res) {
       throw new Error(errMsg.join(' and ') + '.')
     }
     
+    // run recaptcha if it's configured
     await recaptchaIfNeeded(req.body['g-recaptcha-response']);
 
+    // trigger the invitation
     let message = await triggerInvite(req.body.email, res);
 
+    // assuming no errors, display the result
     return res.render('result', {
       community: config.community,
       message: message,
       isFailed: false
     });
   } catch (error) {
+    // if anything throws, show an error
     return res.render('result', {
       community: config.community,
       message: 'Failed! ' + error,

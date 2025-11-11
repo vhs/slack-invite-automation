@@ -7,6 +7,10 @@ Inspired by [How I hacked Slack into a community platform with Typeform](https:/
 
 This repo is VHS' fork, the [original repo](https://github.com/outsideris/slack-invite-automation) has configs for deploying to aws, heroku, azure, etc. This version only bothers with docker deployment.
 
+The reason we need our own fork is that upstream does not seem to be maintained, and so there are a bunch of insecure dependencies. This fork could be replaced if we could find a similar tool that is maintained.
+
+This tool is deployed in a docker container along side nomos, so users can trigger slack invites: https://github.com/vhs/nomos/blob/69571211a7d2353ae44599a8d03b0057972d53ce/app/services/UserService.php#L349
+
 ## Settings
 
 You can set variables for your own purpose in `config.js` or environment variables.

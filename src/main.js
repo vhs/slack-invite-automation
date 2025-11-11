@@ -4,6 +4,7 @@
 const path = require('path');
 const fs = require('fs');
 const envFile = path.join(__dirname, '../.env');
+
 try {
   fs.accessSync(envFile, fs.F_OK);
   require('dotenv').config({path: envFile});
@@ -14,7 +15,7 @@ try {
 /**
 * Module dependencies.
 */
-const app = require('../app');
+const app = require('./app');
 const debug = require('debug')('slack-invite-automation:server');
 const http = require('http');
 

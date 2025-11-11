@@ -7,4 +7,4 @@ WORKDIR /slack-invite-automation
 
 RUN npm install
 
-CMD node ./bin/www
+CMD node ./src/main.js

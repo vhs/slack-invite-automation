@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const request = require('request');
 
 const config = require('../config');
 const { badge } = require('../lib/badge');
@@ -14,77 +13,96 @@ router.get('/', function(req, res) {
                         recaptchaSiteKey: config.recaptchaSiteKey });
 });
 
-router.post('/invite', function(req, res) {
+async function recaptchaIfNeeded(response) {
+  let hasSiteKey = !!config.recaptchaSiteKey;
+  let hasSecretKey = !!config.recaptchaSecretKey;
+
+  let canReCap = hasSiteKey && hasSecretKey;
+
+  if (!canReCap) {
+    return Promise.resolve()
+  }
+
+  const form = new FormData();
+  form.set("response", response)
+  form.set("secret", config.recaptchaSecretKey)
+
+  let result = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+    method: 'POST',
+    body: form
+  })
+
+  let body = await result.json();
+
+  if (body.success) {
+    return Promise.resolve();
+  } else {
+    throw new Error("Invalid captcha.")
+  }
+}
+
+
+router.post('/invite', async function(req, res) {
   if (req.body.email && (!config.inviteToken || (!!config.inviteToken && req.body.token === config.inviteToken))) {
-    function doInvite() {
-      request.post({
-          url: 'https://'+ config.slackUrl + '/api/users.admin.invite',
-          form: {
-            email: req.body.email,
-            token: config.slacktoken,
-            set_active: true
-          }
-        }, function(err, httpResponse, body) {
-          // body looks like:
-          //   {"ok":true}
-          //       or
-          //   {"ok":false,"error":"already_invited"}
-          if (err) { return res.send('Error:' + err); }
-          body = JSON.parse(body);
-          if (body.ok) {
-            res.render('result', {
-              community: config.community,
-              message: 'Success! Check &ldquo;'+ req.body.email +'&rdquo; for an invite from Slack.'
-            });
-          } else {
-            let error = body.error;
-            if (error === 'already_invited' || error === 'already_in_team') {
-              res.render('result', {
-                community: config.community,
-                message: 'Success! You were already invited.<br>' +
-                        'Visit <a href="https://'+ config.slackUrl +'">'+ config.community +'</a>'
-              });
-              return;
-            } else if (error === 'invalid_email') {
-              error = 'The email you entered is an invalid email.';
-            } else if (error === 'invalid_auth') {
-              error = 'Something has gone wrong. Please contact a system administrator.';
-            }
+    async function doInvite() {
+      let url = 'https://'+ config.slackUrl + '/api/users.admin.invite';
 
-            res.render('result', {
-              community: config.community,
-              message: 'Failed! ' + error,
-              isFailed: true
-            });
-          }
+      const body = new FormData();
+      body.set("email", req.body.email);
+      body.set("token", config.slacktoken);
+      body.set("set_active", true);
+
+      let result = await fetch(url, {
+        method: 'POST',
+        body
+      })
+
+      let resultBody = await result.json()
+      // body looks like:
+      //   {"ok":true}
+      //       or
+      //   {"ok":false,"error":"already_invited"}
+
+      // if (err) { return res.send('Error:' + err); } // replace with catch on doInvite?
+      if (resultBody.ok) {
+        return res.render('result', {
+          community: config.community,
+          message: 'Success! Check &ldquo;'+ req.body.email +'&rdquo; for an invite from Slack.'
         });
-    }
-    if (!!config.recaptchaSiteKey && !!config.recaptchaSecretKey) {
-      request.post({
-        url: 'https://www.google.com/recaptcha/api/siteverify',
-        form: {
-          response: req.body['g-recaptcha-response'],
-          secret: config.recaptchaSecretKey
-        }
-      }, function(err, httpResponse, body) {
-        if (typeof body === "string") {
-          body = JSON.parse(body);
-        }
+      }
 
-        if (body.success) {
-          doInvite();
-        } else {
-          error = 'Invalid captcha.';
-          res.render('result', {
-            community: config.community,
-            message: 'Failed! ' + error,
-            isFailed: true
-          });
-        }
+      let error = resultBody.error;
+      if (error === 'already_invited' || error === 'already_in_team') {
+        return res.render('result', {
+          community: config.community,
+          message: 'Success! You were already invited.<br>' +
+                  'Visit <a href="https://'+ config.slackUrl +'">'+ config.community +'</a>'
+        });
+      } else if (error === 'invalid_email') {
+        error = 'The email you entered is an invalid email.';
+      } else if (error === 'invalid_auth') {
+        error = 'Something has gone wrong. Please contact a system administrator.';
+      }
+
+      return res.render('result', {
+        community: config.community,
+        message: 'Failed! ' + error,
+        isFailed: true
       });
-    } else {
-      doInvite();
     }
+
+    try {
+      await recaptchaIfNeeded(req.body['g-recaptcha-response']);
+      return await doInvite();
+    } catch (error) {
+      error = 'Invalid captcha.';
+      return res.render('result', {
+        community: config.community,
+        message: 'Failed! ' + error,
+        isFailed: true
+      });
+    }
+
   } else {
     const errMsg = [];
     if (!req.body.email) {
@@ -101,7 +119,7 @@ router.post('/invite', function(req, res) {
       }
     }
 
-    res.render('result', {
+    return res.render('result', {
       community: config.community,
       message: 'Failed! ' + errMsg.join(' and ') + '.',
       isFailed: true
@@ -109,32 +127,33 @@ router.post('/invite', function(req, res) {
   }
 });
 
-router.get('/badge.svg', (req, res) => {
-  request.get({
-    url: 'https://'+ config.slackUrl + '/api/users.list',
-    qs: {
-      token: config.slacktoken,
-      presence: true
-    }
-  }, function(err, httpResponse, body) {
-    try {
-      body = JSON.parse(body);
-    } catch(e) {
-      return res.status(404).send('');
-    }
+router.get('/badge.svg', async (req, res) => {
+  let queryString = new URLSearchParams({
+    token: config.slacktoken,
+    presence: true,
+  }).toString()
+
+  let url = `https://${config.slackUrl}/api/users.list?${queryString}`;
+
+  try {
+    let result = await fetch(url);
+    let body = await result.json();
+
     if (!body.members) {
-      return res.status(404).send('');
+      throw new Error('missing members in response')
     }
 
     const members = body.members.filter(function(m) {
       return !m.is_bot;
     });
+
     const total = members.length;
     const presence = members.filter(function(m) {
       return m.presence === 'active';
     }).length;
 
     const hexColor = /^([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
     sanitize.middleware.mixinFilters(req);
 
     res.type('svg');
@@ -148,7 +167,10 @@ router.get('/badge.svg', (req, res) => {
             req.queryPattern('colorB', hexColor)
         )
     );
-  });
+
+  } catch (error) {
+    return res.status(404).send('Not found')
+  }
 });
 
 module.exports = router;

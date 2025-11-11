@@ -1,18 +1,11 @@
 Slack Invite Automation
 ------------
 
-[![Build Status](https://travis-ci.com/outsideris/slack-invite-automation.svg?branch=master)](https://travis-ci.com/outsideris/slack-invite-automation)
-
 A tiny web application to invite a user into your Slack team.
 
-Inspired by
-[How I hacked Slack into a community platform with Typeform](https://levels.io/slack-typeform-auto-invite-sign-ups/)
-and Socket.io's Slack page.
+Inspired by [How I hacked Slack into a community platform with Typeform](https://levels.io/slack-typeform-auto-invite-sign-ups/) and Socket.io's Slack page.
 
-This project supports Heroku, Azure, Cloud Foundry, Amazon Web Services (AWS), and [ic.dev](https://ic.dev).
-
-[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
-[![Deploy to Azure](https://azuredeploy.net/deploybutton.png)](https://azuredeploy.net/)
+This repo is VHS' fork, the [original repo](https://github.com/outsideris/slack-invite-automation) has configs for deploying to aws, heroku, azure, etc. This version only bothers with docker deployment.
 
 ## Settings
 
@@ -62,38 +55,6 @@ You can test your token via curl:
    --data 'email=EMAIL&token=TOKEN&set_active=true' \
    --compressed
   ```
-
-### Heroku / Azure
-
-Add the application settings that are defined in the environment variables above.
-
-### Amazon Web Services (AWS)
-
-If you have an AWS account and have already installed and configured the AWS CLI tool, you can easily deploy this application to API Gateway and Lambda via CloudFormation in a few minutes.
-
-Instead of editing `config.js`, take these steps:
-
-1. Copy `aws/config.example.sh` to `aws/config.sh`
-2. Edit the values in `aws/config.sh`, which correspond to the variables described above, plus these:
-    * `StackName`: the name of the CloudFormation stack to create
-    * `S3BucketArtifacts`: the name of an existing S3 bucket you have write access to, for storing deployment artifacts
-    * `S3PrefixArtifacts`: the prefix to use within that S3 bucket for all deployment artifacts written
-3. Run `aws/deploy.sh` to create the CloudFormation stack and deploy your application, outputting the URL
-4. (Optional) For a friendlier URL, log into the AWS web console and establish a custom domain pointing to the API Gateway stage deployed in step 3.
-
-### [ic.dev](https://ic.dev)
-
-If you haven't already installed the IC CLI, please refer to the [documentation](https://ic.dev/docs/en/installation).
-
-Deploy the `lsuss.slack_inviter` brick directly from the IC Public Index:
-```shell
-$ ic aws up lsuss.slack_inviter slack_inviter --params community_name='Your Community Name',slack_url=yourcommunity.slack.com,slack_token=xoxp-xxx-xxx-xxx-xxx
-```
-
-Retreive the id and url of the API:
-```shell
-$ ic aws value slack_inviter
-```
 
 ## Run
 [Node.js](http://nodejs.org/) is required.
@@ -198,14 +159,3 @@ as reCAPTCHA v2 type.
 
 Set "Site key" as `recaptchaSiteKey` or `RECAPTCHA_SITE`,
 and "Secret key" as `recaptchaSecretKey` or `RECAPTCHA_SECRET`.
-
-## Associate fork with heroku
-If you use the "Deploy to Heroku" button and want to modify your App you should
-fork this project. After forking and making changes you should associate your
-repo with the deployed instance by running:
-
-`$ heroku git:remote -a thawing-inlet-61413` replacing your heroku app's name
-and running
-
-`$ git push heroku master` to upload the changes. For full details see
-[Heroku: deploying with git](https://devcenter.heroku.com/articles/git#for-an-existing-heroku-app)

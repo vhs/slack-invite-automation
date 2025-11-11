@@ -62,7 +62,7 @@ async function triggerInvite(email) {
   //   {"ok":true}
   //       or
   //   {"ok":false,"error":"already_invited"
-  // if (err) { return res.send('Error:' + err); } // replace with catch on doInvite?
+  
   if (resultBody.ok) {
     return 'Success! Check &ldquo;'+ email +'&rdquo; for an invite from Slack.';
   }
@@ -154,14 +154,13 @@ router.get('/badge.svg', async (req, res) => {
     res.set('Cache-Control', 'max-age=0, no-cache');
     res.set('Pragma', 'no-cache');
     res.send(
-        badge(
-            presence,
-            total,
-            req.queryPattern('colorA', hexColor),
-            req.queryPattern('colorB', hexColor)
-        )
+      badge(
+          presence,
+          total,
+          req.queryPattern('colorA', hexColor),
+          req.queryPattern('colorB', hexColor)
+      )
     );
-
   } catch (error) {
     return res.status(404).send('Not found')
   }

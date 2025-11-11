@@ -9,6 +9,7 @@ const i18n = require("i18n");
 const config = require('./config');
 
 const routes = require('./routes/index');
+const fs = require('fs');
 
 const app = express();
 
@@ -27,8 +28,11 @@ app.use(i18n.init);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(__dirname + '/public/favicon.ico'));
+let faviconPath = __dirname + '/public/favicon.ico';
+if (fs.existsSync(faviconPath)) {
+    app.use(favicon(faviconPath))
+}
+
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));

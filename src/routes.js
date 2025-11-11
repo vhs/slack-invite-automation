@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const config = require('../config');
-const { badge } = require('../lib/badge');
+const { badge } = require('./badge');
 
 const sanitize = require('sanitize');
 
